@@ -1,0 +1,12 @@
+services:
+  localstack:
+    image: localstack/localstack:4.10
+    container_name: localstack
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      SERVICES: s3,dynamodb
+      AWS_DEFAULT_REGION: eu-west-1
+      PERSISTENCE: "1"
+    volumes:
+      - "./localstack-data:/var/lib/localstack"

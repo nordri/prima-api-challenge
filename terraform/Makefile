@@ -22,6 +22,9 @@ format:
 validate:
 	$(TF_ENV) terraform validate
 
+init:
+	$(TF_ENV) terraform init
+
 plan:
 	$(TF_ENV) terraform plan
 
@@ -30,4 +33,3 @@ apply:
 
 destroy:
 	$(TF_ENV) terraform destroy -auto-approve
-

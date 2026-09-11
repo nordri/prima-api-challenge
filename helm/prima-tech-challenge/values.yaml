@@ -1,0 +1,40 @@
+replicaCount: 2
+
+image:
+  repository: prima-tech-challenge
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+env:
+  dynamodbTable: fede-diaz-tech-challenge-dev-users
+  s3Bucket: fede-diaz-tech-challenge-dev-avatars
+  awsRegion: eu-west-1
+  localstackHost: ""
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+
+probes:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 10

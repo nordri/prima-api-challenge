@@ -1,5 +1,8 @@
+APP_DIR         ?= prima-tech-challenge
+VERSION_FILE    ?= version.txt
+
 IMAGE_NAME      ?= prima-tech-challenge
-IMAGE_TAG       ?= local
+IMAGE_TAG       ?= $(shell cat $(VERSION_FILE))
 CONTAINER_NAME  ?= prima-api
 HOST_PORT       ?= 5000
 CONTAINER_PORT  ?= 5000
@@ -8,10 +11,14 @@ DOCKER_NETWORK  ?= docker-compose_default
 
 IMAGE := $(IMAGE_NAME):$(IMAGE_TAG)
 
-.PHONY: build run rm
+.PHONY: build run rm version
+
+version:
+	@echo $(IMAGE_TAG)
 
 build:
 	docker build \
+		--label org.opencontainers.image.version=$(IMAGE_TAG) \
 		-t $(IMAGE) \
 		.
 

@@ -5,7 +5,7 @@ from .user_service import create_user, get_all_users, uploader
 user_blueprint = Blueprint("user", __name__)
 
 REQUIRED_FIELDS = ["name", "email"]
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 
 
 def validate_user_data(data):
@@ -33,14 +33,14 @@ def validate_user_data(data):
 def allowed_file(filename):
     """
     Check if the file is allowed.
-    
+
     Args:
         filename (str): The filename to check.
 
     Returns:
         bool: True if allowed, False otherwise.
     """
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 @user_blueprint.route("/users", methods=["GET"])
@@ -70,7 +70,7 @@ def post_user():
     """
 
     user_data = request.form.to_dict()
-    avatar = request.files.get('avatar')
+    avatar = request.files.get("avatar")
     error_message, status_code = validate_user_data(user_data)
 
     if error_message:
@@ -81,7 +81,7 @@ def post_user():
         avatar_url = uploader(avatar, filename)
         if not avatar_url:
             return jsonify({"error": "Avatar upload failed"}), 500
-        user_data['avatar_url'] = avatar_url
+        user_data["avatar_url"] = avatar_url
     else:
         return jsonify({"error": "Invalid file type or no file uploaded"}), 400
 

@@ -10,10 +10,6 @@ jobs:
   python:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: app
-
     steps:
       - uses: actions/checkout@v4
 
@@ -25,21 +21,11 @@ jobs:
       - name: Install Poetry
         run: pip install poetry
 
-      - name: Install dependencies
-        run: poetry install --no-root
-
-      - name: Black
-        run: poetry run black --check prima-tech-challenge
-
-      - name: Flake8
-        run: poetry run flake8 prima-tech-challenge
+      - name: Python checks
+        run: make python-check
 
   terraform:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: terraform
 
     steps:
       - uses: actions/checkout@v4
@@ -48,14 +34,8 @@ jobs:
         with:
           terraform_version: 1.15.9
 
-      - name: Terraform fmt
-        run: terraform fmt -check -recursive
-
-      - name: Terraform init
-        run: terraform init -backend=false
-
-      - name: Terraform validate
-        run: terraform validate
+      - name: Terraform checks
+        run: make terraform-check
 
   helm:
     runs-on: ubuntu-latest
@@ -65,11 +45,8 @@ jobs:
 
       - uses: azure/setup-helm@v4
 
-      - name: Helm lint
-        run: helm lint ./helm/prima-tech-challenge
-
-      - name: Helm template
-        run: helm template prima ./helm/prima-tech-challenge
+      - name: Helm checks
+        run: make helm-check
 
   docker:
     runs-on: ubuntu-latest
@@ -77,5 +54,5 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Docker build
-        run: docker build -t prima-tech-challenge:ci ./app
+      - name: Docker build check
+        run: make docker-check

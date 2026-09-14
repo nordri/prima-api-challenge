@@ -48,3 +48,33 @@ variable "aws_session_token" {
   default     = null
   sensitive   = true
 }
+
+variable "enable_irsa" {
+  description = "Create IAM resources required for IRSA"
+  type        = bool
+  default     = false
+}
+
+variable "eks_oidc_provider_arn" {
+  description = "ARN of the EKS OIDC provider"
+  type        = string
+  default     = null
+}
+
+variable "eks_oidc_issuer_url" {
+  description = "OIDC issuer URL of the EKS cluster"
+  type        = string
+  default     = null
+}
+
+variable "kubernetes_namespace" {
+  description = "Kubernetes namespace used by the application"
+  type        = string
+  default     = "default"
+}
+
+variable "kubernetes_service_account" {
+  description = "Kubernetes ServiceAccount used by the application"
+  type        = string
+  default     = "prima"
+}

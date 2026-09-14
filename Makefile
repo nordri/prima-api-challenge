@@ -3,14 +3,12 @@
 check: python-check terraform-check helm-check docker-check
 
 python-check:
-	cd app && poetry install --no-root
-	cd app && poetry run black --check prima-tech-challenge
-	cd app && poetry run flake8 prima-tech-challenge
+	cd app && make python-check
 
 terraform-check:
-	cd terraform && terraform fmt -check -recursive
-	cd terraform && terraform init -backend=false
-	cd terraform && terraform validate
+	cd terraform && make format
+	cd terraform && make init
+	cd terraform && make validate
 
 helm-check:
 	helm lint ./helm/prima-tech-challenge

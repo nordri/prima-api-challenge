@@ -17,8 +17,6 @@ flask-swagger-ui = "^4.11.1"
 pulumi-local = "^1.2.2"
 awscli-local = "^0.22.0"
 
-[tool.poetry.dev-dependencies]
-
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.0"
 

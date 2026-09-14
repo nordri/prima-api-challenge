@@ -11,7 +11,9 @@ DOCKER_NETWORK  ?= docker-compose_default
 
 IMAGE := $(IMAGE_NAME):$(IMAGE_TAG)
 
-.PHONY: build run rm version
+export PYTHONPATH := prima-tech-challenge
+
+.PHONY: build run rm version python-test python-check
 
 version:
 	@echo $(IMAGE_TAG)
@@ -32,3 +34,12 @@ run:
 
 rm:
 	-docker rm -f $(CONTAINER_NAME)
+
+python-test:
+	poetry run pytest -q
+
+python-check:
+	poetry install --no-root
+	poetry run black --check prima-tech-challenge tests
+	poetry run flake8 prima-tech-challenge tests
+	poetry run pytest -q

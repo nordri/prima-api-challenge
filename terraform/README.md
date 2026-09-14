@@ -1,151 +1,115 @@
-# Infrastructure
+# Terraform Infrastructure
 
-This directory contains the Terraform configuration required by the Prima Senior SRE Technical Challenge.
+This directory contains the Terraform configuration required by the Prima Tech Challenge application.
 
-The infrastructure provisions the AWS resources required by the application:
+The infrastructure can be deployed against either:
 
-- An S3 bucket for storing user avatars.
-- A DynamoDB table for storing user information.
+- **LocalStack**, for local development and testing.
+- **AWS**, for a real deployment.
 
-The configuration supports both **LocalStack** for local development and **AWS**.
+When running on EKS, the configuration can optionally create the IAM resources required for **IAM Roles for Service Accounts (IRSA)**.
 
-LocalStack is the default target to prevent accidental deployment to an AWS account.
+## Resources
 
-## Prerequisites
+The Terraform configuration creates the following application resources:
 
-The following tools are required:
+- An **S3 bucket** used to store user avatars.
+- Server-side encryption for the S3 bucket.
+- S3 public access configuration and bucket policy required to expose uploaded avatars.
+- A **DynamoDB table** used to store users.
 
-- Terraform >= 1.15
-- Docker and Docker Compose
-- AWS CLI
-- GNU Make
+When IRSA is enabled, Terraform additionally creates:
 
-For local development, LocalStack must be running and accessible at:
+- An IAM policy containing the permissions required by the application.
+- An IAM role that can be assumed through the EKS OIDC provider.
+- An IAM policy attachment associating the application policy with the role.
 
-```text
-http://localhost:4566
-```
-
-## Terraform resources
-
-The current configuration creates:
-
-- S3 bucket for user avatars.
-- S3 public access block.
-- S3 server-side encryption configuration.
-- DynamoDB users table using `email` as the partition key.
-
-The DynamoDB table uses the `PAY_PER_REQUEST` billing mode.
-
-## Directory structure
+## Directory Structure
 
 ```text
 terraform/
 ├── backend.tf
-├── providers.tf
 ├── variables.tf
 ├── locals.tf
+├── providers.tf
 ├── s3.tf
 ├── dynamodb.tf
+├── iam.tf
+├── outputs.tf
 ├── Makefile
 └── README.md
 ```
 
-Terraform automatically loads all `.tf` files in the directory as part of the same root module.
+## Requirements
+
+The following tools are required:
+
+- Terraform `1.15.9`
+- AWS CLI
+- LocalStack for local development
+
+Terraform can optionally be installed using `tfswitch`.
+
+```bash
+curl -L https://raw.githubusercontent.com/warrensbox/terraform-switcher/master/install.sh | bash
+tfswitch 1.15.9
+```
 
 ## LocalStack
 
-LocalStack is the default deployment target.
+LocalStack is the default development environment.
 
-AWS credentials are not required when using LocalStack. Dummy credentials defined by the Terraform configuration are used instead.
+The Terraform configuration is designed so that IAM/IRSA resources are **not created by default**, allowing the application infrastructure to be deployed without requiring an EKS cluster or OIDC provider.
 
-Ensure LocalStack is running before executing Terraform:
+A Docker Compose configuration is provided in the repository:
 
-```bash
-docker compose up -d
+```text
+docker-compose/
+└── compose.yaml
 ```
 
-The LocalStack endpoint used by Terraform is:
+Start LocalStack from the repository root:
+
+```bash
+docker compose -f docker-compose/compose.yaml up -d
+```
+
+Verify that the container is running:
+
+```bash
+docker compose -f docker-compose/compose.yaml ps
+```
+
+LocalStack can also be checked directly through its health endpoint:
+
+```bash
+curl http://localhost:4566/_localstack/health
+```
+
+The S3 and DynamoDB services should report a running state.
+
+To stop the local environment:
+
+```bash
+docker compose -f docker-compose/compose.yaml down
+```
+
+LocalStack exposes its AWS API endpoint on:
 
 ```text
 http://localhost:4566
 ```
-
-### Deploy locally
-
-Initialize Terraform:
-
-```bash
-terraform init
-```
-
-Review the execution plan:
-
-```bash
-make plan
-```
-
-Deploy the resources:
-
-```bash
-make apply
-```
-
-The default target is LocalStack, therefore the following commands are equivalent:
-
-```bash
-make plan
-make plan TARGET=localstack
-```
-
-## AWS deployment
-
-The same Terraform configuration can target a real AWS account.
-
-AWS credentials must be provided through environment variables:
-
-```bash
-export AWS_ACCESS_KEY_ID="<access-key>"
-export AWS_SECRET_ACCESS_KEY="<secret-key>"
-```
-
-When temporary AWS credentials are used, also provide:
-
-```bash
-export AWS_SESSION_TOKEN="<session-token>"
-```
-
-To generate an AWS execution plan:
-
-```bash
-make plan TARGET=aws
-```
-
-To deploy:
-
-```bash
-make apply TARGET=aws
-```
-
-Using `TARGET=aws` disables the LocalStack endpoints and configures the AWS provider to use the standard AWS service endpoints.
-
-AWS deployment must always be explicitly requested. This is intentional to reduce the risk of accidentally creating resources in a real AWS account.
-
 ## Makefile
 
-The Makefile provides shortcuts for the most common Terraform operations.
+A Makefile is provided for the common Terraform lifecycle operations.
 
 ### Format
 
 ```bash
-make fmt
+make fomat
 ```
 
-Runs:
-
-```bash
-terraform fmt -recursive
-```
+Formats the Terraform configuration.
 
 ### Validate
 
@@ -153,75 +117,273 @@ terraform fmt -recursive
 make validate
 ```
 
-Validates the Terraform configuration.
+Initializes Terraform and validates the configuration.
 
 ### Plan
-
-LocalStack:
 
 ```bash
 make plan
 ```
 
-AWS:
+Generates a Terraform execution plan.
 
-```bash
-make plan TARGET=aws
-```
+By default, the Makefile configures Terraform to use LocalStack.
 
 ### Apply
-
-LocalStack:
 
 ```bash
 make apply
 ```
 
-AWS:
+Applies the Terraform configuration:
 
-```bash
-make apply TARGET=aws
+```text
+S3 bucket
+DynamoDB table
+S3 encryption
+S3 public access configuration
+S3 bucket policy
 ```
 
-Terraform will request confirmation before applying the changes.
-
 ### Destroy
-
-LocalStack:
 
 ```bash
 make destroy
 ```
 
-AWS:
+Destroys the resources managed by Terraform.
+
+## AWS Credentials
+
+The Terraform configuration supports both LocalStack credentials and real AWS credentials.
+
+When AWS credentials are available in the environment, they can be provided using the standard variables:
 
 ```bash
-make destroy TARGET=aws
+export AWS_ACCESS_KEY_ID=<access-key>
+export AWS_SECRET_ACCESS_KEY=<secret-key>
 ```
 
-Terraform will request confirmation before destroying the resources.
+For temporary credentials:
 
-## Configuration
+```bash
+export AWS_SESSION_TOKEN=<session-token>
+```
 
-The main Terraform variables are defined in `variables.tf`.
+When running against LocalStack, development credentials are used instead.
 
-The default configuration targets the local development environment and uses LocalStack-compatible credentials.
+Real AWS credentials should never be committed to the repository.
 
-Resource names are generated using the project name and environment, for example:
+## IAM and IRSA
+
+For an EKS deployment, the application should not use static AWS credentials.
+
+Instead, the Kubernetes ServiceAccount can authenticate to AWS using **IAM Roles for Service Accounts (IRSA)**.
+
+IRSA creation is optional and disabled by default:
 
 ```text
-fede-diaz-tech-challenge-dev-users
-fede-diaz-tech-challenge-dev-avatars
+enable_irsa = false
 ```
 
-Environment-specific values can be overridden using standard Terraform mechanisms or `TF_VAR_*` environment variables.
+This keeps the Terraform configuration compatible with LocalStack and Kubernetes development environments such as KillerCoda.
 
-## Security
+When enabled, Terraform creates an IAM policy containing only the permissions currently required by the application:
 
-The S3 bucket is private by default. Public ACLs and public bucket policies are blocked.
+### DynamoDB
 
-Server-side encryption using S3-managed keys (`AES256`) is enabled for stored avatars.
+```text
+dynamodb:Scan
+dynamodb:PutItem
+```
 
-No AWS credentials are stored in the repository. When targeting AWS, credentials are provided at runtime through environment variables.
+### S3
 
-Additional IAM resources required for the Kubernetes workload are handled separately as part of the EKS/Kubernetes integration.
+```text
+s3:PutObject
+```
+
+The permissions are restricted to the DynamoDB table and S3 bucket created by this Terraform configuration.
+
+## Enabling IRSA
+
+IRSA requires an existing EKS cluster with an IAM OIDC provider.
+
+The following values must be provided:
+
+```text
+enable_irsa
+eks_oidc_provider_arn
+eks_oidc_issuer_url
+kubernetes_namespace
+kubernetes_service_account
+```
+
+The namespace defaults to:
+
+```text
+default
+```
+
+and the ServiceAccount defaults to:
+
+```text
+prima
+```
+
+Example:
+
+```bash
+TF_VAR_enable_irsa=true \
+TF_VAR_eks_oidc_provider_arn="arn:aws:iam::<account-id>:oidc-provider/oidc.eks.eu-west-1.amazonaws.com/id/<oidc-id>" \
+TF_VAR_eks_oidc_issuer_url="https://oidc.eks.eu-west-1.amazonaws.com/id/<oidc-id>" \
+terraform plan
+```
+
+The IAM role trust policy restricts role assumption to the configured Kubernetes ServiceAccount:
+
+```text
+system:serviceaccount:<namespace>:<service-account>
+```
+
+and requires the audience:
+
+```text
+sts.amazonaws.com
+```
+
+The resulting authentication flow is:
+
+```text
+Kubernetes Pod
+      |
+      v
+ServiceAccount
+      |
+      v
+EKS OIDC Provider
+      |
+      | sts:AssumeRoleWithWebIdentity
+      v
+IAM Role
+      |
+      v
+IAM Policy
+      |
+      +----> DynamoDB
+      |
+      +----> S3
+```
+
+## Connecting IRSA to the Helm Deployment
+
+Terraform exposes the created IAM role ARN:
+
+```bash
+terraform output irsa_role_arn
+```
+
+The Helm chart supports arbitrary ServiceAccount annotations, so no AWS-specific logic is required in the chart itself.
+
+For an EKS deployment, the Terraform output can be supplied to Helm as:
+
+```yaml
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: <irsa-role-arn>
+```
+
+or from the command line:
+
+```bash
+helm install prima ./helm/prima-tech-challenge \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"="<irsa-role-arn>"
+```
+
+When running against LocalStack or a local Kubernetes environment, this annotation is simply omitted.
+
+## Local Validation
+
+Start LocalStack from the repository root:
+
+```bash
+docker compose -f docker-compose/compose.yaml up -d
+```
+
+Then deploy the infrastructure:
+
+```bash
+cd terraform
+
+make validate
+make plan
+make apply
+```
+
+The expected Terraform plan creates five resources:
+
+```text
+DynamoDB table
+S3 bucket
+S3 server-side encryption configuration
+S3 public access configuration
+S3 bucket policy
+```
+
+The resulting AWS resources can be verified using the AWS CLI.
+
+### S3
+
+```bash
+aws --profile localstack \
+  --endpoint-url=http://localhost:4566 \
+  s3api list-buckets
+```
+
+### DynamoDB
+
+```bash
+aws --profile localstack \
+  --endpoint-url=http://localhost:4566 \
+  dynamodb list-tables
+```
+
+The expected resources are:
+
+```text
+fede-diaz-tech-challenge-dev-avatars
+fede-diaz-tech-challenge-dev-users
+```
+
+When finished:
+
+```bash
+make destroy
+
+cd ..
+docker compose -f docker-compose/compose.yaml down
+```
+
+## Design Decisions
+
+### LocalStack support
+
+LocalStack allows the infrastructure and application integration to be tested without requiring access to an AWS account.
+
+The same Terraform resources are used for both environments; only provider configuration and optional AWS-specific resources differ.
+
+### Optional IRSA
+
+IRSA depends on an existing EKS OIDC provider and therefore cannot be meaningfully created in the LocalStack development environment.
+
+For this reason, IRSA resources are explicitly optional rather than being mocked locally.
+
+### Least privilege
+
+The IAM policy grants only the AWS operations currently performed by the application and scopes them to the application resources.
+
+### No static credentials in Kubernetes
+
+A production EKS deployment is expected to use IRSA instead of injecting `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` into the application pods.
+
+This keeps AWS credentials out of Kubernetes manifests and delegates credential rotation to AWS STS.

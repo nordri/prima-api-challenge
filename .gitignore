@@ -137,7 +137,6 @@ pulumi/
 *.tfstate
 *.tfstate.*
 .terraform.tfstate.lock.info
-.terraform.lock.hcl
 
 # LocalStack
 docker-compose/localstack-data/

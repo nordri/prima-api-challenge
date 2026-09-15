@@ -1,4 +1,3 @@
-APP_DIR         ?= prima-tech-challenge
 VERSION_FILE    ?= version.txt
 
 IMAGE_NAME      ?= prima-tech-challenge
